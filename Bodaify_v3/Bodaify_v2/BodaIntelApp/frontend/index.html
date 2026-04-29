@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bodaify — Fleet Intelligence</title>
+  <link rel="icon" type="image/png" href="/assets/bodaify_icon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <img src="/assets/bodaify_icon.png" alt="Bodaify" class="brand-logo-img"/>
+    <div class="brand-text">
+      <span class="brand-name">Bodaify</span>
+      <span class="brand-sub">Fleet Intelligence</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item active" data-view="dashboard" onclick="showView('dashboard')">
+      <span class="nav-icon">◈</span><span>Dashboard</span>
+    </a>
+    <a class="nav-item" data-view="routing" onclick="showView('routing')">
+      <span class="nav-icon">⛰</span><span>Incline Routing</span>
+    </a>
+    <a class="nav-item" data-view="jam" onclick="showView('jam')">
+      <span class="nav-icon">◉</span><span>Jam Predictor</span>
+    </a>
+    <a class="nav-item" data-view="road" onclick="showView('road')">
+      <span class="nav-icon">⟁</span><span>Road Quality</span>
+    </a>
+    <a class="nav-item" data-view="fuel" onclick="showView('fuel')">
+      <span class="nav-icon">◬</span><span>Fuel Optimizer</span>
+    </a>
+    <a class="nav-item" data-view="maintenance" onclick="showView('maintenance')">
+      <span class="nav-icon">⚙</span><span>Maintenance AI</span>
+    </a>
+    <a class="nav-item" data-view="dem" onclick="showView('dem')">
+      <span class="nav-icon">△</span><span>DEM Elevation</span>
+    </a>
+    <a class="nav-item" data-view="audit" onclick="showView('audit')">
+      <span class="nav-icon">▦</span><span>Fuel Audit</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="system-status">
+      <div class="status-dot pulse"></div>
+      <span>System Online</span>
+    </div>
+    <div class="version-tag">v1.0.0 · Kampala 2026</div>
+  </div>
+</aside>
+
+<!-- ── MAIN CONTENT ─────────────────────────────────────────────────────── -->
+<main class="main-content">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title" id="page-title">Overview Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="greeting-wrap" id="greeting-wrap">
+        <span class="greeting-text" id="greeting-text"></span>
+      </div>
+      <div class="time-display" id="clock"></div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
+      <div class="badge-kampala">📍 Kampala, UG</div>
+      <div class="user-avatar" id="user-avatar" onclick="toggleUserMenu()" title="Profile">?</div>
+      <div class="user-menu" id="user-menu">
+        <div class="user-menu-info">
+          <div class="um-name" id="um-name">—</div>
+          <div class="um-email" id="um-email">—</div>
+          <div class="um-role" id="um-role">—</div>
+        </div>
+        <div class="user-menu-divider"></div>
+        <button class="um-item" onclick="handleLogout()">⎋ Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ DASHBOARD ══ -->
+  <section class="view active" id="view-dashboard">
+    <div class="hero-stats">
+      <div class="stat-card accent" onclick="showView('audit')">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value" id="stat-riders">20</div>
+        <div class="stat-label">Fleet Riders</div>
+        <div class="stat-trend up">↑ Active today</div>
+      </div>
+      <div class="stat-card" onclick="showView('audit')">
+        <div class="stat-icon">⛽</div>
+        <div class="stat-value" id="stat-fuel">38.4</div>
+        <div class="stat-label">Avg km/L Fleet</div>
+        <div class="stat-trend up">↑ vs 30 baseline</div>
+      </div>
+      <div class="stat-card" onclick="showView('jam')">
+        <div class="stat-icon">◉</div>
+        <div class="stat-value" id="stat-jam">High</div>
+        <div class="stat-label">CBD Congestion</div>
+        <div class="stat-trend down">Peak hour active</div>
+      </div>
+      <div class="stat-card" onclick="showView('maintenance')">
+        <div class="stat-icon">⚙</div>
+        <div class="stat-value" id="stat-health">74</div>
+        <div class="stat-label">Avg Fleet Health</div>
+        <div class="stat-trend up">↑ 3 alerts critical</div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="panel wide">
+        <div class="panel-header">
+          <span class="panel-title">Kampala Congestion Heatmap</span>
+          <span class="panel-badge">Live Simulation</span>
+        </div>
+        <div id="jam-heatmap-chart" class="chart-container"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Fleet Fuel Efficiency</span>
+        </div>
+        <div id="fuel-eff-chart" class="chart-container sm"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Road Quality Index</span>
+        </div>
+        <div id="road-quality-chart" class="chart-container sm"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ROUTING ══ -->
+  <section class="view" id="view-routing">
+    <div class="view-intro">
+      <h2 class="view-heading">🗺 Mapbox Navigation — Turn-by-Turn Directions</h2>
+      <p class="view-desc">Real road routing powered by Mapbox · Incline-aware route analysis · Alternative route comparison.</p>
+    </div>
+
+    <div class="form-panel">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Origin</label>
+          <div style="position:relative">
+            <select id="r-origin" class="input-field"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Destination</label>
+          <select id="r-dest" class="input-field"></select>
+        </div>
+        <div class="form-group">
+          <label>Route Mode</label>
+          <select id="r-mode" class="input-field">
+            <option value="eco">🌿 Eco / Fuel-Save</option>
+            <option value="fastest">⚡ Fastest</option>
+            <option value="safest">🛡 Safest Roads</option>
+            <option value="incline_aware">⛰ Incline-Aware</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Rider Weight (kg)</label>
+          <input id="r-rider-w" type="number" value="70" min="40" max="200" class="input-field"/>
+        </div>
+        <div class="form-group">
+          <label>Load (kg)</label>
+          <input id="r-load" type="number" value="10" min="0" max="100" class="input-field"/>
+        </div>
+        <div class="form-group">
+          <label>Fuel (Litres)</label>
+          <input id="r-fuel" type="number" value="2.5" min="0.1" max="20" step="0.1" class="input-field"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn-primary" onclick="doNavigate()">🗺 Navigate</button>
+        <button class="btn-primary" style="background:var(--bg3);color:var(--text);border:1px solid var(--border)" onclick="calculateAllRoutes()">⇄ Compare All Routes</button>
+        <button class="btn-primary" style="background:var(--bg3);color:var(--text);border:1px solid var(--border)" onclick="clearMapRoutes()">✕ Clear</button>
+      </div>
+    </div>
+
+    <div id="route-result" class="result-panel hidden" style="margin-bottom:14px"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:14px">
+      <!-- Mapbox Map -->
+      <div class="panel" style="overflow:hidden">
+        <div class="panel-header">
+          <span class="panel-title">🗺 Mapbox Navigation · Kampala</span>
+          <span class="panel-badge" id="map-status">Ready</span>
+        </div>
+        <div id="mapbox-map" style="height:480px;width:100%;border-radius:0 0 10px 10px"></div>
+      </div>
+
+      <!-- Right: directions + stops -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="panel" style="overflow:hidden;flex:1">
+          <div class="panel-header">
+            <span class="panel-title">Turn-by-Turn Directions</span>
+            <span class="panel-badge" id="dir-count">—</span>
+          </div>
+          <div id="directions-panel" style="overflow-y:auto;max-height:220px;padding:10px 12px">
+            <div style="color:var(--text2);font-size:12px;font-family:var(--mono);text-align:center;padding:20px 0">
+              Select origin &amp; destination, then click Navigate
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="overflow:hidden;flex:1">
+          <div class="panel-header"><span class="panel-title">Route Stops</span><span class="panel-badge" id="stops-count">—</span></div>
+          <div id="route-map" style="overflow-y:auto;max-height:220px;padding:10px 12px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-header">
+        <span class="panel-title">Alternative Routes Comparison</span>
+        <span class="panel-badge">4 Modes</span>
+      </div>
+      <div id="route-comparison" style="overflow-x:auto;padding:0 14px 14px"></div>
+    </div>
+  </section>
+
+  <!-- ══ JAM PREDICTOR ══ -->
+  <section class="view" id="view-jam">
+    <div class="view-intro">
+      <h2 class="view-heading">◉ Kampala Jam Predictor</h2>
+      <p class="view-desc">AI congestion model trained on Kampala traffic patterns. Predict by area, time, and day.</p>
+    </div>
+    <div class="form-panel">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Area</label>
+          <select id="j-area" class="input-field"></select>
+        </div>
+        <div class="form-group">
+          <label>Hour of Day (0–23)</label>
+          <input id="j-hour" type="number" value="8" min="0" max="23" class="input-field" />
+        </div>
+        <div class="form-group">
+          <label>Day of Week</label>
+          <select id="j-day" class="input-field">
+            <option value="0">Monday</option>
+            <option value="1">Tuesday</option>
+            <option value="2">Wednesday</option>
+            <option value="3">Thursday</option>
+            <option value="4">Friday</option>
+            <option value="5">Saturday</option>
+            <option value="6">Sunday</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="predictJam()">Predict Congestion ◉</button>
+    </div>
+    <div id="jam-result" class="result-panel hidden"></div>
+    <div id="jam-weekly" class="chart-container hidden" style="margin-top:24px"></div>
+  </section>
+
+  <!-- ══ ROAD QUALITY ══ -->
+  <section class="view" id="view-road">
+    <div class="view-intro">
+      <h2 class="view-heading">⟁ Accelerometer Road Quality Map</h2>
+      <p class="view-desc">Submit accelerometer readings to classify road surface. Simulated Kampala map below.</p>
+    </div>
+    <div class="form-panel">
+      <div class="form-grid">
+        <div class="form-group"><label>Latitude</label><input id="rq-lat" type="number" value="0.3476" step="0.0001" class="input-field"/></div>
+        <div class="form-group"><label>Longitude</label><input id="rq-lon" type="number" value="32.5825" step="0.0001" class="input-field"/></div>
+        <div class="form-group"><label>Accel X (m/s²)</label><input id="rq-ax" type="number" value="0.2" step="0.01" class="input-field"/></div>
+        <div class="form-group"><label>Accel Y (m/s²)</label><input id="rq-ay" type="number" value="0.1" step="0.01" class="input-field"/></div>
+        <div class="form-group"><label>Accel Z (m/s²)</label><input id="rq-az" type="number" value="9.9" step="0.01" class="input-field"/></div>
+        <div class="form-group"><label>Speed (km/h)</label><input id="rq-spd" type="number" value="25" step="1" class="input-field"/></div>
+      </div>
+      <button class="btn-primary" onclick="analyzeRoad()">Analyze Road ⟁</button>
+    </div>
+    <div id="road-result" class="result-panel hidden"></div>
+    <div id="road-map-sim" class="chart-container" style="margin-top:24px"></div>
+  </section>
+
+  <!-- ══ FUEL OPTIMIZER ══ -->
+  <section class="view" id="view-fuel">
+    <div class="view-intro">
+      <h2 class="view-heading">◬ Fuel-to-Weight Optimizer</h2>
+      <p class="view-desc">Calculate optimal load configuration for maximum fuel efficiency using physics-based modelling.</p>
+    </div>
+    <div class="form-panel">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Bike Model</label>
+          <select id="f-bike" class="input-field"></select>
+        </div>
+        <div class="form-group"><label>Rider Weight (kg)</label><input id="f-rider-w" type="number" value="70" class="input-field"/></div>
+        <div class="form-group"><label>Load (kg)</label><input id="f-load" type="number" value="15" class="input-field"/></div>
+        <div class="form-group"><label>Fuel (Litres)</label><input id="f-fuel" type="number" value="3.0" step="0.1" class="input-field"/></div>
+        <div class="form-group"><label>Distance (km)</label><input id="f-dist" type="number" value="40" class="input-field"/></div>
+        <div class="form-group"><label>Avg Incline (%)</label><input id="f-incline" type="number" value="3" step="0.5" class="input-field"/></div>
+      </div>
+      <button class="btn-primary" onclick="optimizeFuel()">Optimize ◬</button>
+    </div>
+    <div id="fuel-result" class="result-panel hidden"></div>
+  </section>
+
+  <!-- ══ MAINTENANCE ══ -->
+  <section class="view" id="view-maintenance">
+    <div class="view-intro">
+      <h2 class="view-heading">⚙ Predictive Maintenance AI</h2>
+      <p class="view-desc">Submit bike telemetry for AI-powered failure prediction and maintenance scheduling.</p>
+    </div>
+    <div class="form-panel">
+      <div class="form-grid">
+        <div class="form-group"><label>Bike ID</label><input id="m-id" type="text" value="BODA-001" class="input-field"/></div>
+        <div class="form-group"><label>Mileage (km)</label><input id="m-km" type="number" value="18000" class="input-field"/></div>
+        <div class="form-group"><label>Last Service (km)</label><input id="m-svc-km" type="number" value="15500" class="input-field"/></div>
+        <div class="form-group"><label>Engine Hours</label><input id="m-hours" type="number" value="420" class="input-field"/></div>
+        <div class="form-group"><label>Avg Vibration (m/s²)</label><input id="m-vib" type="number" value="1.8" step="0.1" class="input-field"/></div>
+        <div class="form-group"><label>Brake Wear (%)</label><input id="m-brake" type="number" value="55" class="input-field"/></div>
+        <div class="form-group"><label>Chain Stretch (mm)</label><input id="m-chain" type="number" value="2.1" step="0.1" class="input-field"/></div>
+        <div class="form-group"><label>Front Tyre PSI</label><input id="m-tyre-f" type="number" value="32" class="input-field"/></div>
+        <div class="form-group"><label>Rear Tyre PSI</label><input id="m-tyre-r" type="number" value="36" class="input-field"/></div>
+        <div class="form-group"><label>Oil Level (%)</label><input id="m-oil" type="number" value="65" class="input-field"/></div>
+      </div>
+      <button class="btn-primary" onclick="analyzeMaintenance()">Run Diagnostics ⚙</button>
+    </div>
+    <div id="maint-result" class="result-panel hidden"></div>
+    <div class="panel" style="margin-top:24px">
+      <div class="panel-header"><span class="panel-title">Fleet Health Overview</span></div>
+      <div id="fleet-health" class="chart-container sm"></div>
+    </div>
+  </section>
+
+  <!-- ══ DEM ══ -->
+  <section class="view" id="view-dem">
+    <div class="view-intro">
+      <h2 class="view-heading">△ Digital Elevation Model</h2>
+      <p class="view-desc">SRTM-style terrain integration. Visualise elevation profiles and route inclines across Kampala.</p>
+    </div>
+    <div class="form-panel">
+      <div class="form-grid">
+        <div class="form-group"><label>Start Lat</label><input id="d-lat1" type="number" value="0.3476" step="0.001" class="input-field"/></div>
+        <div class="form-group"><label>Start Lon</label><input id="d-lon1" type="number" value="32.5825" step="0.001" class="input-field"/></div>
+        <div class="form-group"><label>End Lat</label><input id="d-lat2" type="number" value="0.2700" step="0.001" class="input-field"/></div>
+        <div class="form-group"><label>End Lon</label><input id="d-lon2" type="number" value="32.5600" step="0.001" class="input-field"/></div>
+        <div class="form-group"><label>Profile Steps</label><input id="d-steps" type="number" value="30" min="5" max="100" class="input-field"/></div>
+      </div>
+      <button class="btn-primary" onclick="fetchDEM()">Generate Elevation Profile △</button>
+    </div>
+    <div id="dem-result" class="result-panel hidden"></div>
+    <div id="dem-chart" class="chart-container" style="margin-top:24px;min-height:220px"></div>
+  </section>
+
+  <!-- ══ FUEL AUDIT ══ -->
+  <section class="view" id="view-audit">
+    <div class="view-intro">
+      <h2 class="view-heading">▦ Fuel Audit Dashboard</h2>
+      <p class="view-desc">Real-time fuel consumption auditing with anomaly detection and efficiency ranking.</p>
+    </div>
+    <div id="audit-dashboard" class="chart-container" style="margin-bottom:24px"></div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Submit Fuel Entry</span>
+      </div>
+      <div class="form-grid" style="padding:0 0 16px 0">
+        <div class="form-group"><label>Rider ID</label><input id="a-rider" type="text" value="RIDER-001" class="input-field"/></div>
+        <div class="form-group"><label>Date</label><input id="a-date" type="date" class="input-field"/></div>
+        <div class="form-group"><label>Litres</label><input id="a-liters" type="number" value="2.5" step="0.1" class="input-field"/></div>
+        <div class="form-group"><label>Cost (UGX)</label><input id="a-cost" type="number" value="13000" class="input-field"/></div>
+        <div class="form-group"><label>Distance (km)</label><input id="a-dist" type="number" value="85" class="input-field"/></div>
+        <div class="form-group"><label>Station</label><input id="a-station" type="text" value="Total Wandegeya" class="input-field"/></div>
+      </div>
+      <button class="btn-primary" onclick="submitFuelEntry()">Submit Entry ▦</button>
+      <div id="audit-entry-result" class="result-panel hidden" style="margin-top:16px"></div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- Mapbox GL JS -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
